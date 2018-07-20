@@ -25,7 +25,7 @@ func main() {
 
 	pool := x509.NewCertPool()
 
-	caCert, err := ioutil.ReadFile("../certs/ca.crt")
+	caCert, err := ioutil.ReadFile("certs/ca.crt")
 	if err!=nil {
 		log.Fatal("failed to load ca cert",err)
 	}
@@ -64,33 +64,63 @@ func main() {
 
 func handleClient(conn net.Conn) {
 	defer conn.Close()
+	write(conn, "HELO\n")
+	read(conn)
+	write(conn, "POW auth 4\n")
+	read(conn)
+	write(conn, "NAME auth\n")
+	read(conn)
+	write(conn, "MAILNUM auth\n")
+	read(conn)
+	write(conn, "MAIL1 auth\n")
+	read(conn)
+	write(conn, "SKYPE auth\n")
+	read(conn)
+	write(conn, "BIRTHDATE auth\n")
+	read(conn)
+	write(conn, "COUNTRY auth\n")
+	read(conn)
+	write(conn, "ADDRNUM auth\n")
+	read(conn)
+	write(conn, "ADDRLINE1 auth\n")
+	read(conn)
+	write(conn, "ADDRLINE2 auth\n")
+	read(conn)
+	write(conn, "ADDRLINE3 auth\n")
+	read(conn)
+	write(conn, "ADDRLINE4 auth\n")
+	read(conn)
+	write(conn, "END\n")
+	read(conn)
 
-	var buf [2]byte
+	return
+}
+
+func write(conn net.Conn, data string) {
+	_, err := conn.Write([]byte(data))
+	if err!=nil {
+		fmt.Errorf("%v\n",err)
+	}
+}
+
+func read(conn net.Conn) {
+	var buf [512]byte
 	var store []byte
-
 	for {
-		log.Println("trying to read")
-		for {
-			n, err := conn.Read(buf[0:])
-			if err == io.EOF {
-				fmt.Println("Connection closed")
+		n, err := conn.Read(buf[0:])
+		if err == io.EOF {
+			fmt.Println("Connection closed")
+			return
+		}
+		if err!=nil {
+			fmt.Println(err)
+		}
+
+		for _, val := range buf[0:n] {
+			store = append(store, val)
+			if val == byte('\n') {
+				fmt.Println("From client: ",string(store))
 				return
-			}
-			if err!=nil {
-				fmt.Println(err)
-			}
-
-			for _, val := range buf[0:n] {
-				store = append(store, val)
-				if val == byte('\n') {
-					_, err = conn.Write(store)
-					if err!=nil {
-						fmt.Println(err)
-						return
-					}
-
-					store = []byte{}
-				}
 			}
 		}
 	}
