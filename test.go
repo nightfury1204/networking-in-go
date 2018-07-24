@@ -83,31 +83,24 @@ func randomStringR(size int, r *rand.Rand) string {
 
 
 func POWC(authData string, diffculty int, res chan string){
-	prefix1 := ""
-	prefix2 := ""
-	for i:=0;i<diffculty;i++ {
-		prefix1 = prefix1 + "0"
-	}
-
-	prefix2 = prefix1 + "0"
-
 	var (
 		str string
-		checkSumInHex string
+		// checkSumInHex string
 	)
-
+	sz := 23
 	for  {
-		str = randomString(12)
+		str = RandStringBytesMaskImpr(int(sz))
 		// fmt.Println(st)
 		checkSum := sha1.Sum([]byte(authData+str))
-		checkSumInHex = hex.EncodeToString(checkSum[:])
 
-		if strings.HasPrefix(checkSumInHex, prefix1) && !strings.HasPrefix(checkSumInHex, prefix2) {
+		if checkSum[0] == 0 && checkSum[1]==0 && checkSum[2]==0 && (checkSum[3])==0 && (checkSum[4]&0xf0)==0 {
 			fmt.Println(str)
-			fmt.Println(checkSumInHex)
+			fmt.Println(hex.EncodeToString(checkSum[:]))
 			res <- str
 			return
 		}
+
+		//sz = rand.Uint32() & 0xff
 	}
 
 }
@@ -142,4 +135,32 @@ func POWR(authData string, diffculty int, seed int64, res chan string){
 		}
 	}
 
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+const (
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+)
+
+//RandStringBytesMaskImpr - generate random string using masking improved
+func RandStringBytesMaskImpr(n int) string {
+	b := make([]byte, n)
+	l := len(letterBytes)
+	// A rand.Int63() generates 63 random bits, enough for letterIdxMax letters!
+	for i, cache, remain := n-1, rand.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = rand.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < l {
+			b[i] = letterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+
+	return string(b)
 }
